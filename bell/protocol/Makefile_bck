@@ -1,0 +1,81 @@
+CONFIG_UCLIBC_BUILD = y
+
+CROSS_COMPILE ?= mips-linux-gnu-
+
+CC = $(CROSS_COMPILE)gcc
+CPLUSPLUS = $(CROSS_COMPILE)g++
+LD = $(CROSS_COMPILE)ld
+AR = $(CROSS_COMPILE)ar cr
+STRIP = $(CROSS_COMPILE)strip
+
+
+SDKDir = $(PWD)
+IncPath = $(SDKDir)/include $(SDKDir)/sysutils $(SDKDir)/imp ./
+#LIBS = $(LibPath)/libimp.a $(LibPath)/libalog.a
+
+CFLAGS = -Wall -O2 -march=mips32r2 -DWEBS -DUEMF -DUSER_AUTH -D_FILE_OFFSET_BITS=64 -g -rdynamic -DLINUX
+LDFLAGS = -Wl,-gc-sections
+
+ifeq ($(CONFIG_UCLIBC_BUILD), y)
+CFLAGS += -muclibc
+LDFLAGS += -muclibc
+endif
+
+ifeq ($(CONFIG_UCLIBC_BUILD), y)
+LibPath = $(SDKDir)/lib/uclibc
+else
+LibPath = $(SDKDir)/lib/glibc
+endif
+
+CPPFLAGS += $(patsubst %,-I%,$(IncPath))
+#LDFLAGS += $(patsubst %,-L%,$(LibPath))
+
+ModuleDir = web
+#ModuleDir = test protocol/p2p gpio network system application/user application/event application/dTime application/record  middleware/audio middleware/video middleware/network middleware middleware middleware/common 
+FunctionName = webPro
+
+export
+
+unexport ModuleDir 
+
+
+.PHONY : all
+all:$(FunctionName)
+#attention    libiary path   glibc and uclibc
+webPro:web/web.o
+#p2p_test:test/p2p_test.o network/my_network.o network/my_socket.o protocol/p2p/p2p_init.o protocol/p2p/p2p_cmd.o protocol/p2p/p2p_alarm.o protocol/p2p/p2p_audio.o protocol/p2p/p2p_video.o protocol/p2p/p2p_connect_manage.o \
+	protocol/p2p/p2p_read_write.o protocol/ipn/ipn.o application/audio/my_audio.o application/dTime/device_time.o application/video/my_video.o application/record/record.o application/user/user_manage.o  \
+	system/my_system.o application/event/my_event.o gpio/my_gpio.o protocol/json/cjson.o protocol/p2p/libPPCS_API.a protocol/ipn/libiPN_API.a middleware/middleware.o middleware/network/mw_net.o middleware/network/wifi.o \
+	middleware/network/network.o middleware/network/dhcp.o middleware/video/mw_video.o middleware/video/video.o middleware/audio/mw_audio.o middleware/audio/audio.o middleware/audio/encrypt.o middleware/gpio/gpio.o\
+	middleware/common/common.o lib/uclibc/libimp.a lib/uclibc/libalog.a
+	
+	@(\
+	for dir in $(ModuleDir);do\
+	  $(MAKE) -C $$dir;\
+	done;\
+	$(CPLUSPLUS) $(LDFLAGS) -o $@ $^ $(LIBS) -lpthread -lm -lrt;\
+	)
+
+clean:
+	rm -f middleware/*.o
+	rm -f middleware/audio/*.o
+	rm -f middleware/video/*.o
+	rm -f middleware/network/*.o
+	rm -f test/*.o
+	rm -f network/*.o
+	rm -f middleware/common/*.o
+	rm -f protocol/p2p/*.o
+	rm -f application/video/*.o
+	rm -f application/audio/*.o
+	rm -f application/event/*.o
+	rm -f application/dTime/*.o
+	rm -f application/record/*.o
+	rm -f application/user/*.o
+	rm -f middleware/gpio/*.o
+	rm -f network_main
+
+	@(\
+	for dir in $(ModuleDir);do\
+	 $(MAKE) -C $$dir clean;\
+	done;\
+	)

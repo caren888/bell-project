@@ -1,0 +1,124 @@
+CONFIG_UCLIBC_BUILD = y
+
+CROSS_COMPILE ?= mips-linux-gnu-
+
+CC = $(CROSS_COMPILE)gcc
+CPLUSPLUS = $(CROSS_COMPILE)g++
+LD = $(CROSS_COMPILE)ld
+AR = $(CROSS_COMPILE)ar
+STRIP = $(CROSS_COMPILE)strip
+
+# User Management switch
+UMSW    = -DUSER_MANAGEMENT_SUPPORT
+# Digest Access switch
+DASW    = -DDIGEST_ACCESS_SUPPORT
+
+SDKDir = $(PWD)
+IncPath = $(SDKDir)/include $(SDKDir)/sysutils $(SDKDir)/imp $(SDKDir)/protocol/web #$(SDKDir)/protocol/openssl-1.0.0e/include
+
+LIBS = $(SDKDir)/protocol/web/web.a
+LIBS += $(SDKDir)/lib/uclibc/libimp.a
+LIBS += $(SDKDir)/lib/uclibc/libalog.a
+
+CFLAGS = -O2 -Wall -march=mips32r2 -DLINUX -DUSER_AUTH -g -DLINUX\
+	 -DOS="LINUX" -DWEBS -DUEMF $(UMSW) $(DASW) #-DUNICODE
+
+LDFLAGS = -Wl,-rpath=/mnt/tf,-gc-sections
+
+ifeq ($(CONFIG_UCLIBC_BUILD), y)
+CFLAGS += -muclibc
+LDFLAGS += -muclibc
+endif
+
+ifeq ($(CONFIG_UCLIBC_BUILD), y)
+LibPath = $(SDKDir)/lib/uclibc
+else
+LibPath = $(SDKDir)/lib/glibc
+endif
+
+LdPath += $(SDKDir)/lib/uclibc
+#LdPath += $(SDKDir)/protocol/openssl-1.0.0e/ob_out/ob_oust/openssl/lib
+
+CPPFLAGS += $(patsubst %,-I%,$(IncPath))
+LDPATH += $(patsubst %,-L%,$(LdPath))
+
+ModuleDir = application/main \
+	application/audio \
+	middleware/audio \
+	middleware middleware/common \
+	protocol/json \
+	application/web \
+	protocol/web
+FunctionName = app
+
+export
+
+unexport ModuleDir 
+
+
+.PHONY : all
+all:$(FunctionName)
+#attention    libiary path   glibc and uclibc
+app:application/main/main.o \
+	application/audio/my_audio.o \
+	middleware/middleware.o \
+	middleware/audio/mw_audio.o middleware/audio/audio.o middleware/audio/encrypt.o \
+	middleware/common/common.o \
+	protocol/json/cjson.o \
+	application/web/ieparam.o \
+	protocol/web/web.o
+	@(\
+	for dir in $(ModuleDir);do\
+	  $(MAKE) -C $$dir;\
+	done;\
+	$(CPLUSPLUS) $(LDFLAGS) $(LDPATH) -o $@ $^ $(LIBS) -lpthread -lm -lrt -ldl; \
+	$(STRIP) app \
+	)
+
+clean:
+	rm -f middleware/*.o
+	rm -f middleware/audio/*.o
+	rm -f middleware/video/*.o
+	rm -f middleware/network/*.o
+	rm -f test/*.o
+	rm -f network/*.o
+	rm -f middleware/common/*.o
+	rm -f protocol/ipn/*.o
+	rm -f protocol/URL/*.o
+	rm -f protocol/json/*.o
+	rm -f application/p2p/*.o
+	rm -f application/gpio/*.o
+	rm -f application/device/*.o
+	rm -f middleware/misc/*.o
+	rm -f middleware/event/*.o
+	rm -f application/video/*.o
+	rm -f application/audio/*.o
+	rm -f application/event/*.o
+	rm -f application/dTime/*.o
+	rm -f application/misc/*.o
+	rm -f application/record/*.o
+	rm -f application/user/*.o
+	rm -f application/param/*.o
+	rm -f application/network/*.o
+	rm -f application/param/initfile/*.o
+	rm -f application/push/*.o
+	rm -f application/mail/*.o
+	rm -f application/sd/*.o
+	rm -f application/ftp/*.o
+	rm -f application/main/*.o
+	rm -f middleware/gpio/*.o
+	rm -f network_main
+	rm -f app
+	rm -f application/web/*.o
+	rm -f application/update/*.o
+	rm -f protocol/web/*.o
+	rm -f protocol/web/web.a
+	rm -f application/algorithm/*.o
+	rm -f application/sd/*.o
+	rm -f application/local_record/*.o
+	rm -f application/mp4/*.o
+#	@(\
+#	for dir in $(ModuleDir);do\
+#	  $(MAKE) -C $$dir clean;\
+#	done;\
+#	)
